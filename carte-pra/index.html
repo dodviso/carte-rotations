@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Carte PRA - Visualisation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    #map { width: 100%; height: 100%; }
+    .info-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      width: 300px;
+      max-height: 90%;
+      overflow-y: auto;
+    }
+    h4 { margin-top: 0; }
+    .rotation-item {
+      font-size: 0.9em;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="info-panel" id="info">
+    <h4>Informations PRA</h4>
+    <p>Cliquez sur une zone pour afficher ses données.</p>
+  </div>
+
+  <script>
+    // Initialisation de la carte
+    const map = L.map('map').setView([46.6, 2.5], 6); // centre sur la France
+
+    // Fond de carte
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const infoDiv = document.getElementById("info");
+    let praData = {};
+
+    // Charger le JSON des rotations
+    fetch("data/PRA_rotations_map.json")
+      .then(r => r.json())
+      .then(json => {
+        praData = json;
+        // Ensuite, charger le GeoJSON
+        loadGeoJSON();
+      });
+
+    // Fonction pour calculer la couleur selon la valeur
+    function getColor(value) {
+      // value entre 0 et 1 → interpolation entre vert clair et vert foncé
+      return value > 0.8 ? '#006400' :
+             value > 0.7 ? '#228B22' :
+             value > 0.6 ? '#32CD32' :
+             value > 0.5 ? '#7CFC00' :
+             value > 0.4 ? '#ADFF2F' :
+             value > 0.3 ? '#D9FFB3' :
+                            '#F0FFF0';
+    }
+
+    function styleFeature(feature) {
+      const code = feature.properties.PRA_Code;
+      const data = praData[code];
+      const partTop5 = data ? data.part_top5 : 0;
+      return {
+        color: "#555",
+        weight: 1,
+        fillColor: getColor(partTop5),
+        fillOpacity: 0.7
+      };
+    }
+
+    function loadGeoJSON() {
+      fetch("data/pra_wgs84.geojson")
+        .then(r => r.json())
+        .then(geojson => {
+          let selectedLayer = null; // pour mémoriser la zone cliquée
+            const layer = L.geoJSON(geojson, {
+            style: styleFeature,
+            onEachFeature: (feature, layer) => {
+                layer.on({
+                click: (e) => {
+                    // Réinitialiser le style de la précédente sélection
+                    if (selectedLayer) {
+                    geojsonLayer.resetStyle(selectedLayer);
+                    }
+
+                    // Mettre en évidence la nouvelle sélection
+                    e.target.setStyle({
+                    weight: 3,
+                    color: '#000',
+                    fillOpacity: 0.9
+                    });
+
+                    selectedLayer = e.target;
+
+                    // Afficher les infos dans le panneau
+                    showInfo(feature);
+                },
+                mouseover: (e) => {
+                    e.target.setStyle({
+                    weight: 2,
+                    color: '#333',
+                    fillOpacity: 0.8
+                    });
+                },
+                mouseout: (e) => {
+                    if (selectedLayer !== e.target) {
+                    geojsonLayer.resetStyle(e.target);
+                    }
+                }
+                });
+            }
+            });
+            const geojsonLayer = layer.addTo(map);
+          map.fitBounds(layer.getBounds());
+        });
+    }
+
+    function showInfo(feature) {
+      const props = feature.properties;
+      const praCode = props.PRA_Code;
+      const data = praData[praCode];
+
+      let html = `<h4>${props.PRA_Lib}</h4>`;
+      html += `<p><strong>Département :</strong> ${props.dep_nom} (${props.insee_dep})<br>`;
+      html += `<strong>Région :</strong> ${props.reg_nom} (${props.insee_reg})</p>`;
+
+      if (data) {
+        html += `<p><strong>Code PRA :</strong> ${praCode}<br>`;
+        html += `<p><strong>Libellé PRA :</strong> ${data.libelle_pra}<br>`;
+        html += `<strong>Part top 5 :</strong> ${(data.part_top5 * 100).toFixed(1)} %<br>`;
+        html += `<strong>Part top 10 :</strong> ${(data.part_top10 * 100).toFixed(1)} %</p>`;
+        html += `<p><strong>Rotations principales :</strong></p>`;
+        html += `<ul>`;
+        data.rotations.slice(0, 5).forEach(rot => {
+          html += `<li class="rotation-item">${rot.rotation} : ${(rot.part_rotation * 100).toFixed(2)}%</li>`;
+        });
+        html += `</ul>`;
+      } else {
+        html += `<p><em>Aucune donnée trouvée dans PRA_rotations_map.json</em></p>`;
+      }
+
+      infoDiv.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
