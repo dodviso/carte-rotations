@@ -52,7 +52,7 @@
     let praData = {};
 
     // Charger le JSON des rotations
-    fetch("data/PRA_rotations_map.json")
+    fetch("data/json_for_map.json")
       .then(r => r.json())
       .then(json => {
         praData = json;
@@ -144,7 +144,9 @@
         html += `<p><strong>Code PRA :</strong> ${praCode}<br>`;
         html += `<p><strong>Libellé PRA :</strong> ${data.libelle_pra}<br>`;
         html += `<strong>Part top 5 :</strong> ${(data.part_top5 * 100).toFixed(1)} %<br>`;
-        html += `<strong>Part top 10 :</strong> ${(data.part_top10 * 100).toFixed(1)} %</p>`;
+        html += `<strong>Part top 10 :</strong> ${(data.part_top10 * 100).toFixed(1)} %<br>`;
+        html += `<strong>Part top 20 :</strong> ${(data.part_top20 * 100).toFixed(1)} %</p>`;
+        html += `<strong>Nombre de rotations :</strong> ${(data.nb_rotations).toFixed(0)}</p>`;
         html += `<p><strong>Rotations principales :</strong></p>`;
         html += `<ul>`;
         data.rotations.slice(0, 5).forEach(rot => {
