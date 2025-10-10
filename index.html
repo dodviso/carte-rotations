@@ -34,8 +34,8 @@
 <body>
   <div id="map"></div>
   <div class="info-panel" id="info">
-    <h4>Informations PRA</h4>
-    <p>Cliquez sur une zone pour afficher ses données.</p>
+    <h4>Rotations PRA</h4>
+    <p>Cliquez sur une PRA pour afficher ses rotations</p>
   </div>
 
   <script>
@@ -143,9 +143,10 @@
       if (data) {
         html += `<p><strong>Code PRA :</strong> ${praCode}<br>`;
         html += `<p><strong>Libellé PRA :</strong> ${data.libelle_pra}<br>`;
-        html += `<strong>Part top 5 :</strong> ${(data.part_top5 * 100).toFixed(1)} %<br>`;
-        html += `<strong>Part top 10 :</strong> ${(data.part_top10 * 100).toFixed(1)} %<br>`;
-        html += `<strong>Part top 20 :</strong> ${(data.part_top20 * 100).toFixed(1)} %</p>`;
+        html += `<strong>Part top 5 :</strong> ${(data.part_top5 * 100).toFixed(2)} %<br>`;
+        html += `<strong>Part top 10 :</strong> ${(data.part_top10 * 100).toFixed(2)} %<br>`;
+        html += `<strong>Part top 20 :</strong> ${(data.part_top20 * 100).toFixed(2)} %</br>`;
+        html += `<strong>Part top 50 :</strong> ${(data.part_top50 * 100).toFixed(2)} %</p>`;
         html += `<strong>Nombre de rotations :</strong> ${(data.nb_rotations).toFixed(0)}</p>`;
         html += `<p><strong>Rotations principales :</strong></p>`;
         html += `<ul>`;
