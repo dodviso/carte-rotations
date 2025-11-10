@@ -151,11 +151,11 @@
         html += `<p><strong>Rotations principales :</strong></p>`;
         html += `<ul>`;
         data.rotations.slice(0, 5).forEach(rot => {
-          html += `<li class="rotation-item">${rot.rotation} : ${(rot.part_rotation * 100).toFixed(2)}%</li>`;
+          html += `<li class="rotation-item">${rot.rotation_code} : ${(rot.part_rotation * 100).toFixed(2)}%</li>`;
         });
         html += `</ul>`;
       } else {
-        html += `<p><em>Aucune donnée trouvée dans PRA_rotations_map.json</em></p>`;
+        html += `<p><em>Aucune donnée trouvée dans json_for_map.json</em></p>`;
       }
 
       infoDiv.innerHTML = html;
