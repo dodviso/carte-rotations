@@ -7,6 +7,7 @@
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
@@ -29,6 +30,17 @@
       font-size: 0.9em;
       margin-left: 10px;
     }
+    .legend {
+      position: absolute;
+      bottom: 20px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      font-size: 0.85em;
+    }
   </style>
 </head>
 <body>
@@ -38,7 +50,13 @@
     <p>Cliquez sur une PRA pour afficher ses rotations</p>
   </div>
 
+  <div class="legend">
+    <strong>Symbologie</strong><br>
+    Selon la part de terres arables par rapport à la SAU
+  </div>
+
   <script>
+    let ratioData = {};
     // Initialisation de la carte
     const map = L.map('map').setView([46.6, 2.5], 6); // centre sur la France
 
@@ -52,20 +70,64 @@
     let praData = {};
 
     // Charger le JSON des rotations
-    fetch("data/json_for_map.json")
-      .then(r => r.json())
-      .then(json => {
-        praData = json;
-        // Ensuite, charger le GeoJSON
-        loadGeoJSON();
-      });
+    Promise.all([
+      fetch("data/json_for_map.json").then(r => r.json()),
+      new Promise(resolve => {
+        Papa.parse("data/260129_indicateurs_par_pra.csv", {
+          download: true,
+          header: true,
+          dynamicTyping: false, // ⚠ important
+          complete: function(results) {
+            results.data.forEach(row => {
+              if (row.ratio === "r2_ta_sau") {
+                const code = String(row.code_pra).trim();
+                ratioData[code] = parseFloat(row.valeur);
+              }
+            });
+            resolve();
+          }
+        });
+      })
+    ]).then(([json]) => {
+      praData = json;
+      loadGeoJSON();
+    });
+
+    function getSoilColor(value) {
+      if (value === undefined || value === null) return "#f5f5f5";
+
+      return value > 0.95 ? '#002e12' :
+              value > 0.90 ? '#003915' :
+              value > 0.85 ? '#00441b' :
+              value > 0.80 ? '#004f1f' :
+              value > 0.75 ? '#005a24' :
+              value > 0.70 ? '#006628' :
+              value > 0.65 ? '#0b7730' :
+              value > 0.60 ? '#1b7837' :
+              value > 0.55 ? '#2c8a3e' :
+              value > 0.50 ? '#3c9c45' :
+              value > 0.45 ? '#4daf4a' :
+              value > 0.40 ? '#5bb85c' :
+              value > 0.35 ? '#74c476' :
+              value > 0.30 ? '#8dd38f' :
+              value > 0.25 ? '#a1d99b' :
+              value > 0.20 ? '#b8e3b2' :
+              value > 0.15 ? '#ccebc5' :
+              value > 0.10 ? '#dff3d9' :
+              value > 0.05 ? '#eef9ea' :
+                              '#f7fcf5';
+      }
     
     function styleFeature(feature) {
+      const code = feature.properties.PRA_Code;
+      const value = ratioData[code];
+      console.log(feature.properties.PRA_Code, ratioData[feature.properties.PRA_Code]);
+
       return {
         color: "#555",
         weight: 1,
-        fillColor: "#3388ff",   // couleur fixe
-        fillOpacity: 0.6
+        fillColor: getSoilColor(value),
+        fillOpacity: 0.7
       };
     }
 
@@ -119,16 +181,18 @@
     function showInfo(feature) {
       const props = feature.properties;
       const praCode = props.PRA_Code;
+      const ratioValue = ratioData[praCode];
       const data = praData[praCode];
 
       let html = `<h4>${props.PRA_Lib}</h4>`;
+      html += `<p><strong>TA/SAU :</strong> ${(ratioValue * 100).toFixed(2)} %<br>`;
       html += `<p><strong>Département :</strong> ${props.dep_nom} (${props.insee_dep})<br>`;
       html += `<strong>Région :</strong> ${props.reg_nom} (${props.insee_reg})</p>`;
 
       if (data) {
         html += `<p><strong>Code PRA :</strong> ${praCode}<br>`;
-        html += `<p><strong>Libellé PRA :</strong> ${data.libelle_pra}<br>`;
-        html += `<strong>Part top 5 :</strong> ${(data.part_top5 * 100).toFixed(2)} %<br>`;
+        html += `<strong>Libellé PRA :</strong> ${data.libelle_pra}<br>`;
+        html += `<p><strong>Part top 5 :</strong> ${(data.part_top5 * 100).toFixed(2)} %<br>`;
         html += `<strong>Part top 10 :</strong> ${(data.part_top10 * 100).toFixed(2)} %<br>`;
         html += `<strong>Part top 20 :</strong> ${(data.part_top20 * 100).toFixed(2)} %</p>`;
         //html += `<strong>Part top 50 :</strong> ${(data.part_top50 * 100).toFixed(2)} %</p>`;
