@@ -59,28 +59,13 @@
         // Ensuite, charger le GeoJSON
         loadGeoJSON();
       });
-
-    // Fonction pour calculer la couleur selon la valeur
-    function getColor(value) {
-      // value entre 0 et 1 → interpolation entre vert clair et vert foncé
-      return value > 0.8 ? '#006400' :
-             value > 0.7 ? '#228B22' :
-             value > 0.6 ? '#32CD32' :
-             value > 0.5 ? '#7CFC00' :
-             value > 0.4 ? '#ADFF2F' :
-             value > 0.3 ? '#D9FFB3' :
-                            '#F0FFF0';
-    }
-
+    
     function styleFeature(feature) {
-      const code = feature.properties.PRA_Code;
-      const data = praData[code];
-      const partTop5 = data ? data.part_top5 : 0;
       return {
         color: "#555",
         weight: 1,
-        fillColor: getColor(partTop5),
-        fillOpacity: 0.7
+        fillColor: "#3388ff",   // couleur fixe
+        fillOpacity: 0.6
       };
     }
 
